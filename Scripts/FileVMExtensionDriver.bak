@@ -1,0 +1,17 @@
+param (
+    [string]$storageAccountName,
+    [string]$storageContainerName,
+    [string]$storageContainerCsvFolder,
+    [string]$catalogJsonFileName,
+    [string]$containerSAS
+)
+
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+Install-Module AzureRM -Force
+
+Invoke-WebRequest -Uri http://aka.ms/downloadazcopy -OutFile MicrosoftAzureStorageAzCopy_netcore_x64.msi
+Start-Process msiexec -ArgumentList "/i ""MicrosoftAzureStorageAzCopy_netcore_x64.msi"" /quiet /lvx azcopy.log" -Wait
+
+.\RetrieveCSV.ps1 -storageAccountName $storageAccountName -storageContainerName $storageContainerName -storageContainerCsvFolder $storageContainerCsvFolder -containerSAS $containerSAS
+.\CreateAndPopulateCosmos.ps1 -storageAccountName $storageAccountName -storageContainerName $storageContainerName -catalogJsonFileName $catalogJsonFileName -containerSAS $containerSAS
+.\DisableIEESC.ps1

@@ -1,0 +1,30 @@
+param (
+    [string]$storageAccountName,
+    [string]$storageContainerName,
+    [string]$storageContainerCsvFolder,
+    [string]$containerSAS
+)
+
+If (Test-Path "$env:ProgramFiles\Microsoft SDKs\Azure\AzCopy")
+{
+    $env:path += ";$env:ProgramFiles\Microsoft SDKs\Azure\AzCopy\"
+}
+ElseIf (Test-Path "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\AzCopy")
+{
+    $env:path += ";${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\AzCopy\"
+}
+Else
+{
+    Write-Error "Could not find AzCopy. Exiting."
+    exit
+}
+
+$dest = "C:\Rentals"
+
+AzCopy.exe /Source:https://$storageAccountName.blob.core.windows.net/$storageContainerName/$storageContainerCsvFolder /Dest:$dest /SourceSAS:"$containerSAS" /S
+
+# Subdirectories like "Transactions_2018," no matter what we might add or rename, are moved out to be a sibling of the destination directory
+# This leaves only the initial 2017 data in the directory, and prevents accidental recursive data movement in earlier challenges
+foreach($subdirectory in (Get-ChildItem -Directory -Path $dest)){
+    Move-Item (Join-Path $dest $($subdirectory.Name)) (Join-Path $($dest) '..\')
+}
